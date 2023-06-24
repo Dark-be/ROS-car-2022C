@@ -1,0 +1,7 @@
+<launch>
+    <node pkg="serial_pkg" type="car1_node" name="car1" output="screen">
+        <param name="serial_port" type = "string" value="/dev/ttyUSB0" />
+        <param name="top_name" type = "string" value="car1/write" />
+    </node>
+
+</launch>
