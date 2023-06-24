@@ -8,6 +8,9 @@ ros实现2022C题(TI)跟随小车
 
 ## Introduce
 使用jetson nano作为上位机  
+main_controller_pkg包括了主要状态机转换，以及逻辑控制  
+serial_pkg包括了摄像头，小车的串口通信，通过topic实现通信  
+<br>
 摄像头具体话题接口：camera*/read  
 Float32MultiArray:  
 data[0]:left  
