@@ -2,11 +2,11 @@
 
 ros实现2022C题(TI)跟随小车
 
-## Instructions
+## 运行过程
 1.修改main_controller_pkg中的control.launch对应串口参数  
 2.运行control.launch  
 
-## Introduce 
+## 介绍
 main_controller_pkg包括了主要状态机转换，以及逻辑控制  
 serial_pkg包括了摄像头，小车的串口通信，通过topic实现通信  
 <br>
