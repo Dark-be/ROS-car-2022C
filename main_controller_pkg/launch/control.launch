@@ -4,7 +4,7 @@
     main_control节点通过camera1/read接收图像消息
     -->
     <node pkg="main_controller_pkg"     type="main_control1_node" name="main_control1" output="screen">
-        <param name="mode"              type="int"          value="1" />
+        <param name="mode"              type="int"          value="3" />
         <param name="default_speed"     type="int"          value="20"/>
         <param name="trackline"         type="int"          value="1"/>
         <param name="test"              type="int"          value="0"/>
@@ -41,9 +41,9 @@
     <!--camera1节点：
     main_control节点通过camera1/read接收图像消息
     -->
-    <!-- <node pkg="serial_pkg"              type="camera1_node" name="camera1" output="screen">
+    <node pkg="serial_pkg"              type="camera1_node" name="camera1" output="screen">
         <param name="serial_port"       type = "string"     value="/dev/ttyUSB1"/>
-    </node> -->
+    </node>
     
 
 

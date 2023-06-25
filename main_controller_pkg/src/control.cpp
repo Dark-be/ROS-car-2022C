@@ -26,7 +26,6 @@ void mode_callback(std_msgs::Int32 msg){
     }
 }
 
-
 //状态订阅
 typedef struct camera_state
 {
@@ -37,70 +36,6 @@ typedef struct camera_state
     int Edetected=0;
 }camera_state;
 
-camera_state camera1_state;
-
-
-void cam1_callback(std_msgs::Float32MultiArray msg){
-    camera1_state.tright=msg.data[0]-10;
-    camera1_state.tleft=msg.data[1]-10;
-    if(camera1_state.tleft>MAX_TURN)
-        camera1_state.tleft=MAX_TURN;
-    else if(camera1_state.tleft<-MAX_TURN)
-        camera1_state.tleft=-MAX_TURN;
-    if(camera1_state.tright>MAX_TURN)
-        camera1_state.tright=MAX_TURN;
-    else if(camera1_state.tright<-MAX_TURN)
-        camera1_state.tright=-MAX_TURN;
-    ROS_INFO("t_left:%f t_right:%f",camera1_state.tleft,camera1_state.tright);
-    camera1_state.crossing_detected=0;
-    camera1_state.Adetected=0;
-    camera1_state.Edetected=0;
-    if(1<msg.data[2]&&msg.data[2]<2){//检测路口置高
-        camera1_state.crossing_detected=1;
-        ROS_INFO("crossing");
-    }
-    else if(2<msg.data[2]&&msg.data[2]<3){//检测A置高
-        camera1_state.Adetected=1;
-        ROS_INFO("A");
-    }
-    else if(3<msg.data[2]&&msg.data[2]<4){
-        camera1_state.Edetected=1;
-        ROS_INFO("E");
-    }
-}
-camera_state camera2_state;
-void cam2_callback(std_msgs::Float32MultiArray msg){
-    camera2_state.tright=msg.data[0]-10;
-    camera2_state.tleft=msg.data[1]-10;
-    if(camera2_state.tleft>MAX_TURN)
-        camera2_state.tleft=MAX_TURN;
-    else if(camera2_state.tleft<-MAX_TURN)
-        camera2_state.tleft=-MAX_TURN;
-    if(camera2_state.tright>MAX_TURN)
-        camera2_state.tright=MAX_TURN;
-    else if(camera2_state.tright<-MAX_TURN)
-        camera2_state.tright=-MAX_TURN;
-    ROS_INFO("t_left:%f t_right:%f",camera2_state.tleft,camera2_state.tright);
-    camera2_state.crossing_detected=0;
-    camera2_state.Adetected=0;
-    camera2_state.Edetected=0;
-    if(1<msg.data[2]&&msg.data[2]<2){//检测路口置高
-        camera2_state.crossing_detected=1;
-        ROS_INFO("crossing");
-    }
-    else if(2<msg.data[2]&&msg.data[2]<3){//检测A置高
-        camera2_state.Adetected=1;
-        ROS_INFO("A");
-    }
-    else if(3<msg.data[2]&&msg.data[2]<4){
-        camera2_state.Edetected=1;
-        ROS_INFO("E");
-    }
-}
-
-
-
-
 //距离订阅
 float front_distance=0;
 float back_distance=0;
@@ -110,8 +45,6 @@ void scan_callback(std_msgs::Float32MultiArray msg){
     ROS_INFO("distance:%f %f",front_distance,back_distance);
 }
 
-
-//--------------------------------------------------------------------------------------------
 PID distance_pid(5,0,0,0,30);
 
 class Car{
@@ -120,7 +53,6 @@ public:
     int running;                        //运行
     float expect_speed;                 //期望速度
     float default_speed;                //默认速度
-        
     int following;                      //是否跟随
     int left_circle;                    //剩余圈数
 
@@ -129,13 +61,12 @@ public:
 
     ros::NodeHandle nh;
     ros::Publisher vel_pub;
+    ros::Subscriber cam_sub;
     std_msgs::Float32MultiArray vel_msg;
 
-    //状态回调，为全局传入
-    
-    //int signal;
-    camera_state cam_state;
-    float distance;//距离传入信号量
+    //状态回调
+    camera_state cam_state;//相机状态
+    float distance;//距离状态
     
     //固定动作
     int action;
@@ -143,30 +74,59 @@ public:
     double last_time;
     int time_lock;
 
-
-    Car(const std::string& top_name){
-        running=0;//运行
-        following=0;//跟随
-        left_circle=0;//剩余圈数
+    void cam_callback(std_msgs::Float32MultiArray msg){
+        cam_state.tright=msg.data[0]-10;
+        cam_state.tleft=msg.data[1]-10;
+        if(cam_state.tleft>MAX_TURN)
+            cam_state.tleft=MAX_TURN;
+        else if(cam_state.tleft<-MAX_TURN)
+            cam_state.tleft=-MAX_TURN;
+        if(cam_state.tright>MAX_TURN)
+            cam_state.tright=MAX_TURN;
+        else if(cam_state.tright<-MAX_TURN)
+            cam_state.tright=-MAX_TURN;
+        ROS_INFO("t_left:%f t_right:%f",cam_state.tleft,cam_state.tright);
+        cam_state.crossing_detected=0;
+        cam_state.Adetected=0;
+        cam_state.Edetected=0;
+        if(1<msg.data[2]&&msg.data[2]<2){//检测路口置高
+            cam_state.crossing_detected=1;
+            ROS_INFO("crossing");
+        }
+        else if(2<msg.data[2]&&msg.data[2]<3){//检测A置高
+            cam_state.Adetected=1;
+            ROS_INFO("A");
+        }
+        else if(3<msg.data[2]&&msg.data[2]<4){//检测E置高
+            cam_state.Edetected=1;
+            ROS_INFO("E");
+        }
+    }
+    Car(const std::string& pub_name,const std::string& sub_name){
+        running=0;
         expect_speed=0;
-        position=0;
+        default_speed=0;
+        following=0;
+        left_circle=0;
         state=0;
+        position=0;
 
-       cam_state={0,0,0,0,0};
+        cam_state={0,0,0,0,0};
 
-       action=0;
         
         time_lock=0;
-        vel_pub = nh.advertise<std_msgs::Float32MultiArray>(top_name, 100);
-        vel_msg.data.resize(2);
+        action=0;
+
+        vel_pub = nh.advertise<std_msgs::Float32MultiArray>(pub_name, 100);
+        cam_sub = nh.subscribe(sub_name, 100, &Car::cam_callback,this);
         
+        vel_msg.data.resize(2);
     }
     void SetVel(float left,float right){
         vel_msg.data[0] = left;
         vel_msg.data[1] = right;
         vel_pub.publish(vel_msg);
     }
-    
     void Straight(){
         SetVel(expect_speed,expect_speed);
     }
@@ -179,7 +139,6 @@ public:
         SetVel(left,right);
         
     }
-    
     void StraightFor(float _last_time){
         if(time_lock==0){
             last_time=_last_time;
@@ -256,6 +215,9 @@ public:
         if(position>=loop){
             position=0;
         }
+    }
+    void UpdateCamState(){
+
     }
     //路线总共两段，A->crossing crossing->A 对应 00->(01->00)->(10-00)状态转换函数
     //position对应0，1(已测试，逻辑ok)
@@ -382,8 +344,8 @@ public:
 int main(int argc, char **argv) {
     ros::init(argc, argv, "main_control1_node");
     ros::NodeHandle nh;
-    Car car1("car1/write");
-    Car car2("car2/write");
+    Car car1("car1/write","camera1/read");
+    Car car2("car2/write","camera2/read");
 
     //读取行动方案(后续改为订阅)
     nh.getParam("main_control1/mode",mode);
@@ -394,8 +356,6 @@ int main(int argc, char **argv) {
     nh.getParam("main_control1/target_distance",target_distance_p);
     
     ros::Subscriber mode_sub = nh.subscribe("mode", 100, mode_callback);
-    ros::Subscriber cam1_sub = nh.subscribe("camera1/read", 100, cam1_callback);
-    ros::Subscriber cam2_sub = nh.subscribe("camera2/read", 100, cam2_callback);
     ros::Subscriber distance_sub = nh.subscribe("scan1/read", 100, scan_callback);
 
     ros::Rate loop_rate(100);
@@ -476,14 +436,10 @@ int main(int argc, char **argv) {
                 //car1：跟随线路
                 //car2：跟随car1，跟随线路
                 case 1:{
-                    car1.cam_state=camera1_state;
 
                     car1.distance=front_distance;
                     car1.car1_car2_UpdateStateOf12();//更新状态，圈数，跟随模式，时间锁等
                     car1.UpdateRunning();//更新对应行为
-                    
-
-                    car2.cam_state=camera2_state;
 
                     car2.distance=front_distance;
                     car2.car1_car2_UpdateStateOf12();
@@ -493,13 +449,10 @@ int main(int argc, char **argv) {
                 //方案2：
                 //
                 case 2:{
-                    car1.cam_state=camera1_state;
 
                     car1.distance=front_distance;
                     car1.car1_car2_UpdateStateOf12();
                     car1.UpdateRunning();
-
-                    car2.cam_state=camera2_state;
 
                     car2.distance=front_distance;
                     car2.car1_car2_UpdateStateOf12();
@@ -511,13 +464,10 @@ int main(int argc, char **argv) {
                 //car1：跟随线路，insid时序001
                 //car2：跟随car1，跟随线路，insid时序010
                 case 3:{
-                    car1.cam_state=camera1_state;
 
                     car1.distance=front_distance;
                     car1.car1_UpdateStateOf3();
                     car1.UpdateRunning();
-
-                    car2.cam_state=camera2_state;
 
                     car2.distance=front_distance;
                     car2.car1_car2_UpdateStateOf12();
@@ -527,7 +477,6 @@ int main(int argc, char **argv) {
                     break;
                 }
                 case 4:{
-                    car1.cam_state=camera1_state;
 
                     car1.distance=front_distance;
                     car1.car1_car2_UpdateStateOf4();
@@ -540,7 +489,6 @@ int main(int argc, char **argv) {
                     break;
                 }
                 case 5:{
-                    car1.cam_state=camera1_state;
 
                     car1.distance=front_distance;
                     car1.test_UpdateStateOf12();
@@ -554,7 +502,8 @@ int main(int argc, char **argv) {
                 }
             }
             ROS_INFO("car1:state:%d,position:%d,left_circle:%d,distance:%0.2f,expect_speed:%0.2f,following:%d,time_lock:%d,action:%d",car1.state,car1.position,car1.left_circle,car1.distance,car1.expect_speed,car1.following,car1.time_lock,car1.action);
-        }
+            ROS_INFO("car2:state:%d,position:%d,left_circle:%d,distance:%0.2f,expect_speed:%0.2f,following:%d,time_lock:%d,action:%d",car2.state,car2.position,car2.left_circle,car2.distance,car2.expect_speed,car2.following,car2.time_lock,car2.action);
+        }   
         loop_rate.sleep();
     }
     ros::shutdown();
