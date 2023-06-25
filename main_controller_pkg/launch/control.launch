@@ -1,9 +1,50 @@
 <launch>
-    <node pkg="main_controller_pkg" type="control_node" name="main_control" output="screen" />
-    <node pkg="serial_pkg" type="car1_node" name="car1" output="screen">
-        <param name="serial_port" type = "string" value="/dev/ttyUSB0" />
-        <param name="top_name" type = "string" value="car1/write" />
+    <!--main_control节点：
+    main_control节点发布话题car1/write传速度消息
+    main_control节点通过camera1/read接收图像消息
+    -->
+    <node pkg="main_controller_pkg"     type="main_control1_node" name="main_control1" output="screen">
+        <param name="mode"              type = "int"        value="3" />
+        <param name="default_speed"     type="int"          value="30"/>
+        <param name="trackline"         type="int"          value="1"/>
+        <param name="test"              type="int"          value="0"/>
+        <param name="distance"          type="int"          value="10"/>
+        <param name="target_distance"   type="int"          value="20"/>
+    </node>
+    <!--雷达节点，发布话题scan1/read 表示距离-->
+    
+    <!-- <node pkg="rplidar_ros"             type="rplidarNode"  name="rplidarNode1"  output="screen">
+        <param name="serial_port"       type="string"       value="/dev/ttyUSB2"/>
+        <param name="serial_baudrate"   type="int"          value="115200"/>
+        <param name="frame_id"          type="string"       value="laser"/>
+        <param name="inverted"          type="bool"         value="false"/>
+        <param name="angle_compensate"  type="bool"         value="true"/>
+    </node> -->
+
+    <!--读取话题scan特定角度，赋值前后车距-->
+    <node pkg="rplidar_pkg"             type="scan1_node" name="scan1" output="screen">
+        <param name="front_index"       type="int"          value="300"/>
+        <param name="back_index"        type="int"          value="850"/>
+    </node>
+    <!--car1节点：
+    main_control节点发布话题car1/write传速度消息
+    其他节点通过car1/read接收传感器消息
+    -->
+    <node pkg="serial_pkg"              type="car1_node"    name="car1" output="screen">
+        <param name="serial_port"       type = "string"     value="/dev/ttyUSB1
+        " />
+    </node>
+    <!--node pkg="serial_pkg"              type="car2_node"    name="car2" output="screen">
+        <param name="serial_port"       type = "string"     value="/dev/ttyUSB3" />
+    </node-->
+
+    <!--camera1节点：
+    main_control节点通过camera1/read接收图像消息
+    -->
+    <node pkg="serial_pkg"              type="camera1_node" name="camera1" output="screen">
+        <param name="serial_port"       type = "string"     value="/dev/ttyUSB0" />
     </node>
     
+
 
 </launch>

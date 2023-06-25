@@ -116,7 +116,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -149,8 +149,8 @@ include_directories(
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
-add_executable(control_node src/control.cpp)
-target_link_libraries(control_node
+add_executable(main_control1_node src/control1.cpp src/my_pid.cpp)
+target_link_libraries(main_control1_node
   ${catkin_LIBRARIES}
 )
 
