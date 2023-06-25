@@ -7,10 +7,9 @@ ros实现2022C题(TI)跟随小车
 2. 运行control.launch  
 
 ## 介绍
-1. main_controller_pkg包括了主要状态机转换，以及逻辑控制  
+1. main_controller_pkg实现了主要状态机转换，以及逻辑控制，以及主从机控制代码  
 2. serial_pkg实现了摄像头，小车的串口通信，通过topic实现通信  
 3. visual_pub实现了虚拟发布，可编写代码模拟外部话题发布，便于调试逻辑
-4. main_controller
 <br>
 
 ## 话题接口描述
