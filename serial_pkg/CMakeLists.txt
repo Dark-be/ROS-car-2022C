@@ -157,6 +157,14 @@ add_executable(car1_node src/car1.cpp)
 target_link_libraries(car1_node
   ${catkin_LIBRARIES}
 )
+add_executable(camera1_node src/camera1.cpp)
+target_link_libraries(camera1_node
+  ${catkin_LIBRARIES}
+)
+add_executable(car2_node src/car2.cpp)
+target_link_libraries(car2_node
+  ${catkin_LIBRARIES}
+)
 
 
 #############
