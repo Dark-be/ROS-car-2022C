@@ -28,11 +28,6 @@ void mode_callback(std_msgs::Int32 msg){
 
 
 //状态订阅
-float car1_tright=0;
-float car1_tleft=0;
-int car1_crossing=0;
-int car1_Adetected=0;
-int car1_Edetected=0;
 typedef struct camera_state
 {
     float tright=0;

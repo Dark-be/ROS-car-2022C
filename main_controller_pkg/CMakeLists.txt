@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  serial
 )
 
 ## System dependencies are found with CMake's conventions
@@ -149,11 +150,14 @@ include_directories(
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
-add_executable(main_control1_node src/control1.cpp src/my_pid.cpp)
-target_link_libraries(main_control1_node
+add_executable(main_control_node src/control.cpp src/my_pid.cpp)
+target_link_libraries(main_control_node
   ${catkin_LIBRARIES}
 )
-
+add_executable(slave_control_node src/slave_control.cpp)
+target_link_libraries(slave_control_node
+  ${catkin_LIBRARIES}
+)
 #############
 ## Install ##
 #############
