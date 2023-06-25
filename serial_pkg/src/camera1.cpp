@@ -35,45 +35,33 @@ int main(int argc, char **argv){
     std::string serial_port;
     nh.getParam("camera1/serial_port", serial_port);
 
-
     //发布订阅
-    //ros::Subscriber write_sub = nh.subscribe("serial/read", 200, write_callback);//订阅mcu串口数据
     ros::Publisher camera_pub = nh.advertise<std_msgs::Float32MultiArray>("camera1/read", 100);//发布camera串口数据
     
     if(open_serial(serial_port)==-1)
         return -1;
  
-    //配置：
     //100hz频率执行
     std::string read_str;
-    std_msgs::Float32MultiArray read_msg;
+    std_msgs::Float32MultiArray camera_msg;
     float left;
     float right;
     float task;
-    read_msg.data.resize(3);
+    camera_msg.data.resize(3);
     ros::Rate loop_rate(100);
 
     while(ros::ok){
-
         ros::spinOnce();
-
         if(ser.available()){
             read_str = ser.read(ser.available());
-            //sscanf(read_str.c_str(), "%f %f %f", &left, &right, &task);
-            //read_msg.data[0]=left;
-            //read_msg.data[1]=right;
-            //read_msg.data[2]=task;
             sscanf(read_str.c_str(), "%f %f %f", &left, &right, &task);
-            read_msg.data[0]=left;
-            read_msg.data[1]=right;
-            read_msg.data[2]=task;
-            ROS_INFO("%s",read_str.c_str());
-            camera_pub.publish(read_msg);
-            
+            camera_msg.data[0]=left;
+            camera_msg.data[1]=right;
+            camera_msg.data[2]=task;
+            ROS_INFO("camera1:%s",read_str.c_str());
+            camera_pub.publish(camera_msg);
         }
         loop_rate.sleep();
     }
-    
-    
     return 0;
 }
