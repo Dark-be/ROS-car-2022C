@@ -7,7 +7,7 @@
 #include <signal.h>
 #include "my_pid.h"
 
-#define MAX_TURN 30.0
+#define MAX_TURN 25.0
 
 
 //---------------------------------------------------------------------------------回调函数区
@@ -33,38 +33,78 @@ float car1_tleft=0;
 int car1_crossing=0;
 int car1_Adetected=0;
 int car1_Edetected=0;
+typedef struct camera_state
+{
+    float tright=0;
+    float tleft=0;
+    int crossing_detected=0;
+    int Adetected=0;
+    int Edetected=0;
+}camera_state;
+
+camera_state camera1_state;
+
+
 void cam1_callback(std_msgs::Float32MultiArray msg){
-    car1_tleft=msg.data[0]-10;
-    car1_tright=msg.data[1]-10;
-    if(car1_tleft>MAX_TURN)
-        car1_tleft=MAX_TURN;
-    else if(car1_tleft<-MAX_TURN)
-        car1_tleft=-MAX_TURN;
-    if(car1_tright>MAX_TURN)
-        car1_tright=MAX_TURN;
-    else if(car1_tright<-MAX_TURN)
-        car1_tright=-MAX_TURN;
-    ROS_INFO("t_left:%f t_right:%f",car1_tleft,car1_tright);
-    car1_crossing=0;
-    car1_Adetected=0;
-    car1_Edetected=0;
+    camera1_state.tright=msg.data[0]-10;
+    camera1_state.tleft=msg.data[1]-10;
+    if(camera1_state.tleft>MAX_TURN)
+        camera1_state.tleft=MAX_TURN;
+    else if(camera1_state.tleft<-MAX_TURN)
+        camera1_state.tleft=-MAX_TURN;
+    if(camera1_state.tright>MAX_TURN)
+        camera1_state.tright=MAX_TURN;
+    else if(camera1_state.tright<-MAX_TURN)
+        camera1_state.tright=-MAX_TURN;
+    ROS_INFO("t_left:%f t_right:%f",camera1_state.tleft,camera1_state.tright);
+    camera1_state.crossing_detected=0;
+    camera1_state.Adetected=0;
+    camera1_state.Edetected=0;
     if(1<msg.data[2]&&msg.data[2]<2){//检测路口置高
-        car1_crossing=1;
+        camera1_state.crossing_detected=1;
         ROS_INFO("crossing");
     }
     else if(2<msg.data[2]&&msg.data[2]<3){//检测A置高
-        car1_Adetected=1;
+        camera1_state.Adetected=1;
         ROS_INFO("A");
     }
     else if(3<msg.data[2]&&msg.data[2]<4){
-        car1_Edetected=1;
+        camera1_state.Edetected=1;
         ROS_INFO("E");
     }
-
-//    car1.crossing_detected=1;
-//    car1.Edetected=1;
-//    car1.Adetected=1;
 }
+camera_state camera2_state;
+void cam2_callback(std_msgs::Float32MultiArray msg){
+    camera2_state.tright=msg.data[0]-10;
+    camera2_state.tleft=msg.data[1]-10;
+    if(camera2_state.tleft>MAX_TURN)
+        camera2_state.tleft=MAX_TURN;
+    else if(camera2_state.tleft<-MAX_TURN)
+        camera2_state.tleft=-MAX_TURN;
+    if(camera2_state.tright>MAX_TURN)
+        camera2_state.tright=MAX_TURN;
+    else if(camera2_state.tright<-MAX_TURN)
+        camera2_state.tright=-MAX_TURN;
+    ROS_INFO("t_left:%f t_right:%f",camera2_state.tleft,camera2_state.tright);
+    camera2_state.crossing_detected=0;
+    camera2_state.Adetected=0;
+    camera2_state.Edetected=0;
+    if(1<msg.data[2]&&msg.data[2]<2){//检测路口置高
+        camera2_state.crossing_detected=1;
+        ROS_INFO("crossing");
+    }
+    else if(2<msg.data[2]&&msg.data[2]<3){//检测A置高
+        camera2_state.Adetected=1;
+        ROS_INFO("A");
+    }
+    else if(3<msg.data[2]&&msg.data[2]<4){
+        camera2_state.Edetected=1;
+        ROS_INFO("E");
+    }
+}
+
+
+
 
 //距离订阅
 float front_distance=0;
@@ -99,12 +139,7 @@ public:
     //状态回调，为全局传入
     
     //int signal;
-    int Adetected;
-    int crossing_detected;
-    int Edetected;
-
-    float t_right;//循迹传入信号量
-    float t_left;
+    camera_state cam_state;
     float distance;//距离传入信号量
     
     //固定动作
@@ -122,9 +157,9 @@ public:
         position=0;
         state=0;
 
-        Adetected=0;
-        crossing_detected=0;
-        Edetected=0;
+       cam_state={0,0,0,0,0};
+
+       action=0;
         
         time_lock=0;
         vel_pub = nh.advertise<std_msgs::Float32MultiArray>(top_name, 100);
@@ -212,7 +247,7 @@ public:
                     }
                 }
                 if(trackline_p==1)
-                    TrackLine(t_left,t_right);
+                    TrackLine(cam_state.tleft,cam_state.tright);
                 else
                     Straight();
             }
@@ -230,18 +265,18 @@ public:
     //路线总共两段，A->crossing crossing->A 对应 00->(01->00)->(10-00)状态转换函数
     //position对应0，1(已测试，逻辑ok)
     void car1_car2_UpdateStateOf12(){
-        state=Adetected*10+crossing_detected;
+        state=cam_state.Adetected*10+cam_state.crossing_detected;
         if(state==/*0*/1){//检测到路口并处于对应路段
             if(position==0){
                 StraightFor(30/expect_speed);
-                crossing_detected=0;
+                cam_state.crossing_detected=0;
                 UpdatePosition(2);
             }
         }
         else if(state==10){//检测到A点并处于对应路段
             if(position==1){
                 left_circle--;
-                Adetected=0;
+                cam_state.Adetected=0;
                 UpdatePosition(2);
             }
         }
@@ -249,18 +284,18 @@ public:
     }
 
     void test_UpdateStateOf12(){
-        state=Adetected*10+crossing_detected;
+        state=cam_state.Adetected*10+cam_state.crossing_detected;
         if(state==/*0*/1){//检测到路口并处于对应路段
             if(position==0){
                 TurnFor(30/expect_speed);
-                crossing_detected=0;
+                cam_state.crossing_detected=0;
                 UpdatePosition(2);
             }
         }
         else if(state==10){//检测到A点并处于对应路段
             if(position==1){
                 left_circle--;
-                Adetected=0;
+                cam_state.Adetected=0;
                 UpdatePosition(2);
             }
         }
@@ -273,7 +308,7 @@ public:
     //路线总共三段，A->crosing crossing->A 对应 00->(01->00)->(10-00)状态转换函数
     //position对应0，1
     void car1_UpdateStateOf3(){//car1为外外内 领跟领
-        state=Adetected*10+crossing_detected;
+        state=cam_state.Adetected*10+cam_state.crossing_detected;
         if(state==/*0*/1){//检测到路口并处于对应路段
             if(position==0){
                 if(left_circle==3){
@@ -287,21 +322,21 @@ public:
                     following=0;
                     TurnFor(30*0.7/expect_speed);
                 }
-                crossing_detected=0;
+                cam_state.crossing_detected=0;
                 UpdatePosition(2);
             }
         }
         else if(state==10){//检测到A点并处于对应路段
             if(position==1){
                 left_circle--;
-                Adetected=0;
+                cam_state.Adetected=0;
                 UpdatePosition(2);
             }
         }
         expect_speed=default_speed;
     }
     void car2_UpdateStateOf3(){
-        state=Adetected*10+crossing_detected;
+        state=cam_state.Adetected*10+cam_state.crossing_detected;
         if(state==/*0*/1){//检测到路口并处于对应路段
             if(position==0){
                 if(left_circle==3){
@@ -315,23 +350,24 @@ public:
                     following=1;
                     StraightFor(30/expect_speed);
                 }
-                crossing_detected=0;
+                cam_state.crossing_detected=0;
                 UpdatePosition(2);
             }
         }
         else if(state==10){//检测到A点并处于对应路段
             if(position==1){
                 left_circle--;
-                Adetected=0;
+                cam_state.Adetected=0;
                 UpdatePosition(2);
             }
         }
         expect_speed=default_speed;
     }
     void car1_car2_UpdateStateOf4(){//car1 car2 逻辑一样，初始不同 001  010 
-        state=Adetected*100+Edetected*10+crossing_detected;
+        state=cam_state.Adetected*100+cam_state.Edetected*10+cam_state.crossing_detected;
         if(state==1){//检测分叉路口并处于对应路段
             if(position==0){
+                cam_state.crossing_detected=0;
                 StraightFor(30/expect_speed);
                 UpdatePosition(3);
             }
@@ -339,6 +375,7 @@ public:
         else if(state==10){//检测到E点并处于对应路段
             if(position==1){
                 left_circle--;
+                cam_state.Edetected=0;
                 UpdatePosition(3);
             }
         }
@@ -378,6 +415,12 @@ int main(int argc, char **argv) {
                     car1.state=0;//初状态
                     car1.following=0;//关闭跟随模式
 
+                    car2.running=1;
+                    car2.left_circle=1;
+                    car2.default_speed=default_speed_p;
+                    car2.state=0;
+                    car2.following=1;
+
                     break;
                 }
                 case 2:{
@@ -386,6 +429,12 @@ int main(int argc, char **argv) {
                     car1.default_speed=default_speed_p;
                     car1.state=0;
                     car1.following=1;
+
+                    car2.running=1;
+                    car2.left_circle=1;
+                    car2.default_speed=default_speed_p;
+                    car2.state=0;
+                    car2.following=1;
                     break;
                 }
                 case 3:{
@@ -395,6 +444,7 @@ int main(int argc, char **argv) {
                     car1.state=0;
                     car1.following=0;
                     
+
                     break;
                 }
                 case 4:{
@@ -430,32 +480,34 @@ int main(int argc, char **argv) {
                 //car1：跟随线路
                 //car2：跟随car1，跟随线路
                 case 1:{
-                    car1.crossing_detected=car1_crossing;
-                    car1.Adetected=car1_Adetected;
-                    car1.t_left=car1_tleft;
-                    car1.t_right=car1_tright;
+                    car1.cam_state=camera1_state;
+
                     car1.distance=front_distance;
                     car1.car1_car2_UpdateStateOf12();//更新状态，圈数，跟随模式，时间锁等
                     car1.UpdateRunning();//更新对应行为
                     
-                    //car2.t_left=car2t_left;
-                    //car2.t_right=car2t_right;
-                    //car2.distance=car2_distance;
-                    //car2.car1_car2_UpdateStateOf12();
+
+                    car2.cam_state=camera2_state;
+
+                    car2.distance=front_distance;
+                    car2.car1_car2_UpdateStateOf12();
+                    car2.UpdateRunning();
                     break;
                 }
                 //方案2：
                 //
                 case 2:{
-                    car1.crossing_detected=car1_crossing;
-                    car1.Adetected=car1_Adetected;
-                    car1.t_left=car1_tleft;
-                    car1.t_right=car1_tright;
+                    car1.cam_state=camera1_state;
+
                     car1.distance=front_distance;
                     car1.car1_car2_UpdateStateOf12();
-                    car1.UpdateRunning();//更新对应行为
+                    car1.UpdateRunning();
 
-                    //car2.car2_UpdateStateOf123();
+                    car2.cam_state=camera2_state;
+
+                    car2.distance=front_distance;
+                    car2.car1_car2_UpdateStateOf12();
+                    car2.UpdateRunning();
 
                     break;
                 }
@@ -463,23 +515,24 @@ int main(int argc, char **argv) {
                 //car1：跟随线路，insid时序001
                 //car2：跟随car1，跟随线路，insid时序010
                 case 3:{
-                    car1.crossing_detected=car1_crossing;
-                    car1.Adetected=car1_Adetected;
-                    car1.t_left=car1_tleft;
-                    car1.t_right=car1_tright;
+                    car1.cam_state=camera1_state;
+
                     car1.distance=front_distance;
                     car1.car1_UpdateStateOf3();
-                    car1.UpdateRunning();//更新对应行为
+                    car1.UpdateRunning();
 
-                    
+                    car2.cam_state=camera2_state;
+
+                    car2.distance=front_distance;
+                    car2.car1_car2_UpdateStateOf12();
+                    car2.UpdateRunning();
+
 
                     break;
                 }
                 case 4:{
-                    car1.crossing_detected=car1_crossing;
-                    car1.Adetected=car1_Adetected;
-                    car1.t_left=car1_tleft;
-                    car1.t_right=car1_tright;
+                    car1.cam_state=camera1_state;
+
                     car1.distance=front_distance;
                     car1.car1_car2_UpdateStateOf4();
                     car1.UpdateRunning();//更新对应行为
@@ -491,10 +544,8 @@ int main(int argc, char **argv) {
                     break;
                 }
                 case 5:{
-                    car1.crossing_detected=car1_crossing;
-                    car1.Adetected=car1_Adetected;
-                    car1.t_left=car1_tleft;
-                    car1.t_right=car1_tright;
+                    car1.cam_state=camera1_state;
+
                     car1.distance=front_distance;
                     car1.test_UpdateStateOf12();
                     car1.UpdateRunning();//更新对应行为

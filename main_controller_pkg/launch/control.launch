@@ -14,7 +14,7 @@
     <!--雷达节点，发布话题scan1/read 表示距离-->
     
     <!-- <node pkg="rplidar_ros"             type="rplidarNode"  name="rplidarNode1"  output="screen">
-        <param name="serial_port"       type="string"       value="/dev/ttyUSB2"/>
+        <param name="serial_port"       type="string"       value="/dev/ttyUSB1"/>
         <param name="serial_baudrate"   type="int"          value="115200"/>
         <param name="frame_id"          type="string"       value="laser"/>
         <param name="inverted"          type="bool"         value="false"/>
@@ -31,19 +31,18 @@
     其他节点通过car1/read接收传感器消息
     -->
     <node pkg="serial_pkg"              type="car1_node"    name="car1" output="screen">
-        <param name="serial_port"       type = "string"     value="/dev/ttyUSB1
-        " />
+        <param name="serial_port"       type = "string"     value="/dev/ttyUSB0"/>
     </node>
-    <!--node pkg="serial_pkg"              type="car2_node"    name="car2" output="screen">
-        <param name="serial_port"       type = "string"     value="/dev/ttyUSB3" />
-    </node-->
+    <node pkg="serial_pkg"              type="car2_node"    name="car2" output="screen">
+        <param name="serial_port"       type = "string"     value="/dev/ttyTHS1" />
+    </node>
 
     <!--camera1节点：
     main_control节点通过camera1/read接收图像消息
     -->
-    <node pkg="serial_pkg"              type="camera1_node" name="camera1" output="screen">
-        <param name="serial_port"       type = "string"     value="/dev/ttyUSB0" />
-    </node>
+    <!-- <node pkg="serial_pkg"              type="camera1_node" name="camera1" output="screen">
+        <param name="serial_port"       type = "string"     value="/dev/ttyUSB1"/>
+    </node> -->
     
 
 
