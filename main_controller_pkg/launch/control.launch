@@ -4,12 +4,13 @@
     main_control节点通过camera1/read接收图像消息
     -->
     <node pkg="main_controller_pkg"     type="main_control1_node" name="main_control1" output="screen">
-        <param name="mode"              type="int"          value="3" />
-        <param name="default_speed"     type="int"          value="20"/>
+        <param name="mode"              type="int"          value="2" />
+        <param name="default_speed"     type="int"          value="30"/>
         <param name="trackline"         type="int"          value="1"/>
         <param name="test"              type="int"          value="0"/>
         <param name="distance"          type="int"          value="10"/>
         <param name="target_distance"   type="int"          value="20"/>
+        <param name="straight_distance" type="int"          value="10"/>
     </node>
     <!--雷达节点，发布话题scan1/read 表示距离-->
     
@@ -31,7 +32,7 @@
     其他节点通过car1/read接收传感器消息
     -->
     <node pkg="serial_pkg"              type="car1_node"    name="car1" output="screen">
-        <param name="serial_port"       type="string"       value="/dev/ttyUSB0"/>
+        <param name="serial_port"       type="string"       value="/dev/ttyUSB1"/>
     </node>
     <node pkg="serial_pkg"              type="car2_node"    name="car2" output="screen">
         <param name="serial_port"       type="string"       value="/dev/ttyTHS1" />
@@ -42,7 +43,7 @@
     main_control节点通过camera1/read接收图像消息
     -->
     <node pkg="serial_pkg"              type="camera1_node" name="camera1" output="screen">
-        <param name="serial_port"       type = "string"     value="/dev/ttyUSB1"/>
+        <param name="serial_port"       type = "string"     value="/dev/ttyUSB0"/>
     </node>
     
 

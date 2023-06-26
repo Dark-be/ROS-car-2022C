@@ -151,7 +151,7 @@ include_directories(
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
-add_executable(pub_node src/pub_node.cpp)
+add_executable(pub_node src/pub_detected.cpp)
 target_link_libraries(pub_node
   ${catkin_LIBRARIES}
 )

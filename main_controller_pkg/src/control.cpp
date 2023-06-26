@@ -16,6 +16,7 @@ int trackline_p=1;
 int test_p=0;
 int distance_p=10;
 int target_distance_p=20;
+int straight_distance_p=10;
 //行为模式 1~4 0为待输入
 //行为模式订阅//暂时使用launch文件修改
 int mode=0;
@@ -75,8 +76,8 @@ public:
     int time_lock;
 
     void cam_callback(std_msgs::Float32MultiArray msg){
-        cam_state.tright=msg.data[0]-10;
-        cam_state.tleft=msg.data[1]-10;
+        cam_state.tleft=msg.data[0]-10;
+        cam_state.tright=msg.data[1]-10;
         if(cam_state.tleft>MAX_TURN)
             cam_state.tleft=MAX_TURN;
         else if(cam_state.tleft<-MAX_TURN)
@@ -113,7 +114,6 @@ public:
 
         cam_state={0,0,0,0,0};
 
-        
         time_lock=0;
         action=0;
 
@@ -162,24 +162,27 @@ public:
     void DoingLock(){
         if(test_p==1)
             time_lock=0;
-        if(ros::Time::now().toSec()-time<last_time){
+        float past_time=ros::Time::now().toSec()-time;
+        if(past_time<last_time){
             if(action==1){
-
                 Straight();
             }
             else if(action==2){
-
-                Turn(-30);
+                if(past_time<straight_distance_p/expect_speed){
+                    Straight();
+                }
+                else {
+                    Turn(-40);
+                }
             }
-                
         }
         else if(ros::Time::now().toSec()-time>=last_time){
             ROS_INFO("Time unlock");
             time_lock=0;
         }
     }
-    void TrackLine(float _left,float _right){
-        SetVel(expect_speed+_left,expect_speed+_right);
+    void TrackLine(){
+        SetVel(expect_speed+cam_state.tleft,expect_speed+cam_state.tright);
     }
     void Stop(){
         SetVel(0,0);
@@ -201,7 +204,7 @@ public:
                     }
                 }
                 if(trackline_p==1)
-                    TrackLine(cam_state.tleft,cam_state.tright);
+                    TrackLine();
                 else
                     Straight();
             }
@@ -277,7 +280,7 @@ public:
                 }
                 else if(left_circle==1){
                     following=0;
-                    TurnFor(30*0.7/expect_speed);
+                    TurnFor(30/expect_speed);
                 }
                 cam_state.crossing_detected=0;
                 UpdatePosition(2);
@@ -301,7 +304,7 @@ public:
                 }
                 else if(left_circle==2){
                     following=0;
-                    TurnFor(30*0.7/expect_speed);
+                    TurnFor(30/expect_speed);
                 }
                 else if(left_circle==1){
                     following=1;
@@ -338,11 +341,10 @@ public:
         }
         expect_speed=default_speed;
     }
-    //-------------------------------------------------------------------------------------------
 };
 
 int main(int argc, char **argv) {
-    ros::init(argc, argv, "main_control1_node");
+    ros::init(argc, argv, "main_control_node");
     ros::NodeHandle nh;
     Car car1("car1/write","camera1/read");
     Car car2("car2/write","camera2/read");
@@ -354,6 +356,7 @@ int main(int argc, char **argv) {
     nh.getParam("main_control1/test",test_p);
     nh.getParam("main_control1/distance",distance_p);
     nh.getParam("main_control1/target_distance",target_distance_p);
+    nh.getParam("main_control1/straight_distance",straight_distance_p);
     
     ros::Subscriber mode_sub = nh.subscribe("mode", 100, mode_callback);
     ros::Subscriber distance_sub = nh.subscribe("scan1/read", 100, scan_callback);
